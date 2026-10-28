@@ -20,7 +20,7 @@
     kids.flat(2).forEach((c) => { if (c != null && c !== false) e.append(c.nodeType ? c : document.createTextNode(String(c))); });
     return e;
   }
-  const LOGO = '<svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#10233F"/><path d="M9 10h14v4.5c0 5-3 8.2-7 9.5-4-1.3-7-4.5-7-9.5z" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><path d="M12.5 15.5l2.500 2.500 4.500-5" fill="none" stroke="#6EE7B7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const LOGO = '<svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#0A84E8"/><path d="M9 10h14v4.5c0 5-3 8.2-7 9.5-4-1.3-7-4.5-7-9.5z" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><path d="M12.5 15.5l2.500 2.500 4.500-5" fill="none" stroke="#6EE7B7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   function svgSpan(markup) { const s = h('span'); s.innerHTML = markup; return s; } // trusted static markup only
   const badge = (status) => h('span', { class: 'badge ' + S.STATUS[status].tone }, S.STATUS[status].label);
   const link = (ref, role) => location.href.split('#')[0] + '#/' + (role === 'vendor' ? 'v' : 't') + '/' + ref;
@@ -66,7 +66,7 @@
   function SampleCard() {
     const rows = [['Offer created', 'done'], ['Terms accepted', 'done'], ['Payment recorded', 'done'], ['Delivery confirmed', 'now'], ['Inspection window', ''], ['Completion checks', '']];
     return h('div', { class: 'card sample', 'aria-label': 'Sample transaction card' },
-      h('div', { class: 'head' }, h('div', null, h('b', { style: 'color:#10233F' }, 'iPhone 15 Pro Max 256GB'), h('div', { class: 'small muted' }, 'Sample transaction')),
+      h('div', { class: 'head' }, h('div', null, h('b', { style: 'color:#0E2F5A' }, 'iPhone 15 Pro Max 256GB'), h('div', { class: 'small muted' }, 'Sample transaction')),
         h('span', { class: 'badge amber' }, 'Inspection in progress')),
       h('div', { class: 'big' }, S.formatNaira(1650000)), h('div', { class: 'small muted' }, 'Example price only'),
       h('ul', { class: 'mini' }, rows.map(([t, c]) => h('li', { class: c }, h('i'), t))),
@@ -112,6 +112,14 @@
           h('div', { class: 'card' }, h('h3', null, 'Buyer'), h('p', { class: 'muted' }, 'Sample buyer.'), h('a', { class: 'btn', href: '#/buyer' }, 'Continue as buyer')))));
   }
 
+  /* ---------- dashboard shell: sidebar on desktop, scrolling pill row on phones ---------- */
+  function Shell(active, content) {
+    const items = [['Dashboard', '#/vendor'], ['Create Transaction', '#/create'], ['Transactions', '#/vendor/transactions'], ['Disputes', '#/vendor/disputes'], ['Buyer view', '#/buyer'], ['Investor overview', '#/investor']];
+    return h('div', { class: 'shell' }, h('aside', { class: 'side', 'aria-label': 'Dashboard' },
+      items.map(([t, href]) => h('a', { href, class: t === active ? 'on' : null, 'aria-current': t === active ? 'page' : null }, t)),
+      h('p', { class: 'small muted side-note' }, 'Sample workspace. Transactions here are coordinated in a structured process, with simulated events only.')), content);
+  }
+
   /* ---------- dashboards ---------- */
   const GROUPS = {
     awaiting: ['awaiting_review', 'changes_requested', 'accepted'],
@@ -124,8 +132,8 @@
     return h('a', { class: 'list-item', href: '#/' + (role === 'vendor' ? 'v' : 't') + '/' + tx.ref },
       h('div', null, h('b', null, tx.productName), h('span', { class: 'small muted' }, tx.ref + ' · ' + S.formatNaira(S.totalOf(tx)) + ' (example)')), badge(tx.status));
   }
-  function VendorDash() {
-    const f = ui.form.filter || { q: '', status: '' };
+  function VendorDash(sub) {
+    const f = ui.form.filter || { q: '', status: sub === 'disputes' ? 'dispute' : '' };
     const all = S.list();
     const stat = (label, n) => h('div', { class: 'card stat' }, h('b', null, n), h('span', { class: 'muted small' }, label));
     const shown = all.filter((t) => (!f.status || t.status === f.status) && (!f.q || (t.productName + t.ref).toLowerCase().includes(f.q.toLowerCase())));
@@ -140,9 +148,9 @@
     }
     renderList();
     return h('div', { class: 'wrap page' }, Flash(),
-      h('div', { class: 'row', style: 'justify-content:space-between;margin-bottom:16px' }, h('div', null, h('h2', { style: 'margin:0' }, 'Welcome, Lagos Gadget Hub'), h('span', { class: 'muted small' }, 'Sample vendor workspace with example data')),
+      h('div', { class: 'row', style: 'justify-content:space-between;margin-bottom:16px' }, h('div', null, h('h2', { style: 'margin:0' }, sub === 'transactions' ? 'Transaction history' : sub === 'disputes' ? 'Disputes' : 'Welcome, Lagos Gadget Hub'), h('span', { class: 'muted small' }, 'Sample vendor workspace with example data')),
         h('a', { class: 'btn', href: '#/create' }, 'Create transaction')),
-      h('div', { class: 'grid g4', style: 'margin-bottom:16px' }, stat('Sample transactions', all.length),
+      sub ? null : h('div', { class: 'grid g4', style: 'margin-bottom:16px' }, stat('Sample transactions', all.length),
         stat('Awaiting buyer or payment', all.filter((t) => GROUPS.awaiting.includes(t.status)).length),
         stat('In delivery or inspection', all.filter((t) => [...GROUPS.progress, ...GROUPS.inspection].includes(t.status)).length),
         stat('Under dispute review', all.filter((t) => t.status === 'dispute').length)),
@@ -289,7 +297,7 @@
     const d = tx.dispute; if (!d) return null;
     const box = h('div', { class: 'card stack' }, h('div', { class: 'row', style: 'justify-content:space-between' }, h('h3', { style: 'margin:0' }, 'Dispute ' + d.ref), h('span', { class: 'badge ' + (tx.status === 'resolved' ? 'green' : 'red') }, d.status)),
       kv([['Reported issue', d.reason], ['Buyer description', d.description], ['Vendor response', d.vendorResponse || 'Not yet provided'], ['Resolution', d.resolution || 'Pending']]),
-      h('div', null, h('b', { style: 'color:#10233F' }, 'Evidence timeline'), h('ol', { class: 'tl', style: 'margin-top:10px' }, d.evidence.map((x) => h('li', null, h('span', { class: 'when' }, S.formatDate(x.at)), x.label)))));
+      h('div', null, h('b', { style: 'color:#0E2F5A' }, 'Evidence timeline'), h('ol', { class: 'tl', style: 'margin-top:10px' }, d.evidence.map((x) => h('li', null, h('span', { class: 'when' }, S.formatDate(x.at)), x.label)))));
     if (d.status === 'Return Proposed') box.append(h('div', { class: 'alert warn' }, 'A return is proposed. The returned item and its condition would need verification before any refund is finalised.'));
     if (d.status === 'Refund Proposed') box.append(h('div', { class: 'alert warn' }, 'A refund is proposed in this demonstration. No refund is processed by this prototype.'));
     if (role === 'vendor' && tx.status === 'dispute') box.append(h('div', null, field('Vendor response', 'vresp', '', null, { area: true }),
@@ -371,8 +379,13 @@
       ['Operational and regulatory challenges', false, 'Payment-provider and licensing structure, how funds would be held, dispute handling capacity, identity checks, delivery coordination, and legal advice on all of these.'],
       ['Roadmap', false, 'Prototype, vendor and buyer interviews, legal and regulatory advice, payment-provider selection, backend build, controlled pilot.'],
       ['Next validation milestones', false, 'Interview vendors on current practice, test willingness to use the process, confirm the regulatory route, and agree pilot success measures.']];
+    const nConf = items.filter((x) => x[1]).length;
+    const card = ([title, c, body]) => h('div', { class: 'card' }, h('div', { class: 'row', style: 'justify-content:space-between;margin-bottom:8px' }, h('h3', { style: 'margin:0' }, title), t(c)), h('p', { style: 'margin:0' }, body));
+    const group = (name, from, to) => h('section', null, h('h2', { style: 'font-size:1.25rem' }, name), h('div', { class: 'grid g2' }, items.slice(from, to).map(card)));
     return h('div', null, hero('Investor overview', 'What is decided, and what still needs evidence. No market sizes, revenue projections or partnerships are claimed.'),
-      h('div', { class: 'wrap page' }, h('div', { class: 'stack' }, items.map(([title, c, body]) => h('div', { class: 'card' }, h('div', { class: 'row', style: 'justify-content:space-between' }, h('h3', { style: 'margin:0' }, title), t(c)), h('p', { style: 'margin:10px 0 0' }, body))),
+      h('div', { class: 'wrap page' }, h('div', { class: 'stack' },
+        h('div', { class: 'grid g3' }, [[nConf, 'Project decisions confirmed'], [items.length - nConf, 'Assumptions to validate'], ['0', 'Market or revenue figures claimed']].map(([n, l]) => h('div', { class: 'card stat' }, h('b', null, n), h('span', { class: 'muted small' }, l)))),
+        group('The opportunity', 0, 4), group('The product and business model', 4, 7), group('Risks and path to a pilot', 7, 10),
         h('a', { class: 'btn', href: '#/vendor' }, 'See the working prototype'))));
   }
 
@@ -384,9 +397,9 @@
       case undefined: view = Landing(); break;
       case 'how': view = How(); break;
       case 'enter': view = Enter(); break;
-      case 'vendor': view = VendorDash(); break;
-      case 'buyer': view = BuyerDash(); break;
-      case 'create': view = Create(); break;
+      case 'vendor': view = Shell(p[1] === 'disputes' ? 'Disputes' : p[1] === 'transactions' ? 'Transactions' : 'Dashboard', VendorDash(p[1])); break;
+      case 'buyer': view = Shell('Buyer view', BuyerDash()); break;
+      case 'create': view = Shell('Create Transaction', Create()); break;
       case 'investor': view = Investor(); break;
       case 't': view = TxPage(p[1], 'buyer'); break;
       case 'v': view = TxPage(p[1], 'vendor'); break;
